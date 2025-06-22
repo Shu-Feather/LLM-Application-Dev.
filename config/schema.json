@@ -1,0 +1,32 @@
+{
+    "type": "object",
+    "properties": {
+      "summary": { "type": "string" },
+      "details": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "title": { "type": "string" },
+            "content": { "type": "string" }
+          },
+          "required": ["title", "content"]
+        }
+      },
+      "metadata": {
+        "type": "object",
+        "properties": {
+          "generated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confidence": {
+            "type": "number"
+          }
+        },
+        "required": ["generated_at"]
+      }
+    },
+    "required": ["summary", "details", "metadata"]
+  }
+  

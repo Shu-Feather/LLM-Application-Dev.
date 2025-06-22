@@ -1,0 +1,5 @@
+openai>=1.45.0,<2.0.0
+python-dotenv>=0.21.0
+jsonschema>=4.0.0
+tenacity>=8.0.0
+camel-ai[all]>=0.2.68
