@@ -1,3 +1,4 @@
+# modules/llm_client.py
 import os
 import openai
 from dotenv import load_dotenv
@@ -7,61 +8,50 @@ from modules.utils import retry_on_exception
 load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# ANSI 颜色示例（可选）
+GREEN = "\033[92m"
+RESET = "\033[0m"
+
 class LLMClient:
-    def __init__(self, model_name="gpt-3.5-turbo"):
+    def __init__(self, model_name="gpt-4"):
         self.model = model_name
 
     @retry_on_exception
-    def chat_stream(self, messages, temperature=0.7, top_p=1.0):
+    def chat_stream(self, messages, temperature=0.7, top_p=1.0, **kwargs):
         """
-        使用 OpenAI Python SDK v1 的流式接口逐块返回内容，实现打字机效果。
+        流式调用，逐块打印（打字机效果），并返回完整文本。
         """
-        response = openai.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            top_p=top_p,
-            stream=True
-        )
+        params = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": True,
+        }
+        params.update(kwargs)
+        response = openai.chat.completions.create(**params)
         collected = ""
+        # 打印前可输出提示
+        sys.stdout.write(GREEN)  # 切换到绿色
         for chunk in response:
-            # chunk.choices[0].delta 是一个对象，属性 content 存放文本
-            delta_obj = chunk.choices[0].delta
-            # 有时 delta_obj 可能没有 content（如只是 role 信息），所以用 getattr 安全获取
-            delta = getattr(delta_obj, "content", "")
+            delta = getattr(chunk.choices[0].delta, "content", "")
             if delta:
                 collected += delta
                 sys.stdout.write(delta)
                 sys.stdout.flush()
+        sys.stdout.write(RESET)  # 恢复颜色
         print()  # 最后换行
         return collected
 
     @retry_on_exception
-    def chat_once(self, messages, temperature=0.7, top_p=1.0):
-        """
-        非流式一次性调用，仅用于对比或测试，不作为主流程。
-        """
-        response = openai.chat.completions.create(
-            model=self.model,
-            messages=messages,
-            temperature=temperature,
-            top_p=top_p,
-            stream=False
-        )
-        # 直接访问 message.content
+    def chat_once(self, messages, temperature=0.7, top_p=1.0, **kwargs):
+        params = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": temperature,
+            "top_p": top_p,
+            "stream": False,
+        }
+        params.update(kwargs)
+        response = openai.chat.completions.create(**params)
         return response.choices[0].message.content
-
-    def compare_temperature(self, user_prompt: str, system_prompt="You are a helpful assistant."):
-        """
-        演示不同 temperature 对输出的影响，对比流式结果。
-        """
-        base_messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": user_prompt}
-        ]
-        print("=== Temperature=0.7 流式输出 ===")
-        out1 = self.chat_stream(base_messages, temperature=0.7)
-        print("返回内容（temperature=0.7）:", out1)
-        print("\n=== Temperature=1.2 流式输出 ===")
-        out2 = self.chat_stream(base_messages, temperature=1.2)
-        print("返回内容（temperature=1.2）:", out2)

@@ -3,3 +3,11 @@ python-dotenv>=0.21.0
 jsonschema>=4.0.0
 tenacity>=8.0.0
 camel-ai[all]>=0.2.68
+
+openai-whisper>=20230314
+Pillow>=9.0.0
+sentence-transformers>=2.2.2
+faiss-cpu>=1.7.3
+requests>=2.25.1
+python-dotenv>=0.21.0
+torch>=1.12.0

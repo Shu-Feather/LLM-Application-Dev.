@@ -1,32 +1,88 @@
 {
-    "type": "object",
-    "properties": {
-      "summary": { "type": "string" },
-      "details": {
-        "type": "array",
-        "items": {
-          "type": "object",
-          "properties": {
-            "title": { "type": "string" },
-            "content": { "type": "string" }
-          },
-          "required": ["title", "content"]
-        }
-      },
-      "metadata": {
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "通用结构化响应 Schema",
+  "type": "object",
+  "properties": {
+    "summary": {
+      "type": "string",
+      "minLength": 1,
+      "description": "对用户请求的简要总结或主要响应"
+    },
+    "details": {
+      "type": "array",
+      "description": "细节列表，数组每项为对象，包含 title 和 content",
+      "items": {
         "type": "object",
         "properties": {
-          "generated_at": {
+          "title": {
             "type": "string",
-            "format": "date-time"
+            "minLength": 1,
+            "description": "条目标题"
           },
-          "confidence": {
-            "type": "number"
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "description": "条目内容"
           }
         },
-        "required": ["generated_at"]
+        "required": ["title", "content"],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "metadata": {
+      "type": "object",
+      "description": "元数据，包含生成时间和置信度等",
+      "properties": {
+        "generated_at": {
+          "type": "string",
+          "format": "date-time",
+          "description": "生成时间，UTC 格式"
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0,
+          "description": "置信度估计"
+        },
+        "version": {
+          "type": "string",
+          "description": "可选：响应版本或 Schema 版本"
+        },
+        "source": {
+          "type": "string",
+          "description": "可选：数据来源标识，例如 RAG 检索库名称"
+        }
+      },
+      "required": ["generated_at", "confidence"],
+      "additionalProperties": false
+    },
+    "recommendations": {
+      "type": "array",
+      "description": "可选：推荐列表，每项是字符串或对象",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string" },
+              "detail": { "type": "string" }
+            },
+            "required": ["title", "detail"],
+            "additionalProperties": false
+          }
+        ]
       }
     },
-    "required": ["summary", "details", "metadata"]
-  }
-  
+    "images": {
+      "type": "array",
+      "description": "可选：图片 URL 列表或 Base64 编码列表",
+      "items": { "type": "string", "format": "uri" }
+    }
+  },
+  "required": ["summary", "details", "metadata"],
+  "additionalProperties": false
+}

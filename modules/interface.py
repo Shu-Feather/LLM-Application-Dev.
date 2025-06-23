@@ -1,76 +1,158 @@
 import argparse
+import os
 import json
 import logging
+import sys
+import time
 from modules.preprocessing import preprocess
 from modules.llm_client import LLMClient
 from modules.validator import validate_json, request_correction
+from modules.multimodal import MultiModalProcessor
+from modules.rag import RAGRetriever, augment_query_with_rag
+from modules.memory_manager import MemoryManager
+from modules.agent_extension import AdvancedAgent
+
+# ANSI 颜色代码用于美化输出
+GREEN = "\033[92m"
+BLUE = "\033[94m"
+YELLOW = "\033[93m"
+RESET = "\033[0m"
 
 logger = logging.getLogger(__name__)
 
+def print_separator():
+    """打印装饰性的分隔线"""
+    print(f"{BLUE}{'-' * 50}{RESET}")
+
 def run_cli():
-    parser = argparse.ArgumentParser(description="基础 LLM 应用 CLI")
-    parser.add_argument('--model', type=str, default='gpt-3.5-turbo', help='模型名称')
-    parser.add_argument('--temp', type=float, default=0.7, help='temperature 参数')
-    parser.add_argument('--top_p', type=float, default=1.0, help='top_p 参数')
-    parser.add_argument('--compare', action='store_true', help='对比不同 temperature 输出')
-    parser.add_argument('--use_agent', action='store_true', help='使用 CAMEL Agent')
+    # 解析命令行参数
+    parser = argparse.ArgumentParser(description="Enhanced LLM Application CLI")
+    parser.add_argument('--model', type=str, default='gpt-4', help='LLM model name')
+    parser.add_argument('--temp', type=float, default=0.7, help='Temperature parameter')
+    parser.add_argument('--top_p', type=float, default=1.0, help='Top_p parameter')
+    parser.add_argument('--enable_multimodal', action='store_true', help='Enable multimodal input (image/audio)')
+    parser.add_argument('--image_input', type=str, help='Image input path')
+    parser.add_argument('--audio_input', type=str, help='Audio input path')
+    parser.add_argument('--enable_rag', action='store_true', help='Enable RAG retrieval augmentation')
+    parser.add_argument('--rag_index', type=str, help='RAG index prefix path')
+    parser.add_argument('--rag_docs', type=str, help='RAG documents JSON file path')
+    parser.add_argument('--enable_memory', action='store_true', help='Enable conversation history')
+    parser.add_argument('--use_advanced_agent', action='store_true', help='Use custom AdvancedAgent')
     args = parser.parse_args()
 
+    # 初始化组件
     llm = LLMClient(model_name=args.model)
+    multimodal = MultiModalProcessor() if args.enable_multimodal else None
+    rag = None
+    if args.enable_rag:
+        retriever = RAGRetriever(index_prefix=args.rag_index) if args.rag_index else RAGRetriever()
+        if args.rag_docs and os.path.exists(args.rag_docs):
+            with open(args.rag_docs, 'r', encoding='utf-8') as f:
+                docs = json.load(f)
+            retriever.build_index(docs)
+        rag = retriever
+    memory = MemoryManager() if args.enable_memory else None
+    agent = AdvancedAgent(user_id='cli_user', rag=rag) if args.use_advanced_agent else None
 
-    if args.compare:
-        prompt = input("请输入用于对比的 Prompt: ")
-        prompt = preprocess(prompt)
-        llm.compare_temperature(prompt)
-        return
-
-    # Agent 部分略...
-
+    # 主交互循环
+    print(f"{GREEN}Welcome to Enhanced LLM CLI! Type 'exit' to quit.{RESET}")
     while True:
-        user_input = input("\n输入你的请求 (输入 'exit' 退出): ")
+        user_input = input(f"\n{YELLOW}Enter your request: {RESET}")
         if user_input.lower() in ('exit', 'quit'):
+            print(f"{GREEN}Goodbye!{RESET}")
             break
+
         clean_input = preprocess(user_input)
         if not clean_input.strip():
-            print("输入为空或被过滤， 请重新输入更具体的请求。")
+            print(f"{YELLOW}Input is empty or filtered. Please try again.{RESET}")
             continue
 
-        # 更详细的 system_prompt，指导生成有意义内容
-        system_prompt = (
-            "请基于用户输入生成有意义的 JSON，字段含义如下：\n"
-            "- summary: 对用户输入的总结或回应（非空）。\n"
-            "- details: 进一步的信息列表，根据上下文生成示例或建议。\n"
-            "- metadata.generated_at: 当前 UTC 时间，格式 YYYY-MM-DDTHH:MM:SSZ。\n"
-            "- metadata.confidence: 0.0-1.0 之间的估计值，反映对生成内容的信心。\n"
-            "仅输出合法 JSON，不要额外注释或代码块标记。"
-        )
-        messages = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": clean_input}
-        ]
-        print("开始请求 LLM，流式输出如下：")
-        try:
-            raw_out = llm.chat_stream(messages, temperature=args.temp, top_p=args.top_p)
-        except Exception as e:
-            logger.error(f"LLM 调用异常: {e}")
-            continue
+        print_separator()
 
-        # JSON 校验与修正
-        try:
-            parsed = json.loads(raw_out)
-            valid, err = validate_json(parsed)
-        except Exception:
-            valid = False
-            err = "JSON 解析失败"
-        if not valid:
-            print(f"输出不符合 Schema: {err}，正在请求修正……")
+        # 多模态处理
+        if multimodal:
+            if args.image_input and os.path.exists(args.image_input):
+                desc = multimodal.process_image_input(args.image_input)
+                print(f"{BLUE}[Multimodal] Image Description:{RESET} {desc}")
+                clean_input = f"Image Description: {desc}\nUser Input: {clean_input}"
+            if args.audio_input and os.path.exists(args.audio_input):
+                txt = multimodal.process_audio_input(args.audio_input)
+                print(f"{BLUE}[Multimodal] Audio Transcription:{RESET} {txt}")
+                clean_input = txt or clean_input
+
+        # 代理模式
+        if agent:
+            print(f"{BLUE}[Agent] Processing...{RESET}")
+            time.sleep(0.5)  # 模拟思考延迟
             try:
-                corrected = request_correction(llm, raw_out, clean_input)
-                print("修正后输出：")
-                print(corrected)
+                response = agent.decide_and_execute(clean_input)
+                print(response)  # 代理模式下直接输出响应
             except Exception as e:
-                logger.error(f"修正过程异常: {e}")
-        else:
-            print("输出符合 Schema，可进一步处理或保存：")
-            print(json.dumps(parsed, ensure_ascii=False, indent=2))
-            # 可保存或其他后续流程
+                logger.error(f"Agent processing failed: {e}")
+                print(f"{YELLOW}Error: Agent processing failed.{RESET}")
+            print_separator()
+            continue
+
+        # RAG 模式
+        prompt_to_use = clean_input
+        if rag:
+            retrieved = rag.retrieve(clean_input)
+            if retrieved:
+                print(f"{BLUE}[RAG] Retrieved References:{RESET}")
+                for i, doc in enumerate(retrieved, 1):
+                    print(f"{i}. {doc['content'][:100]}...")
+                context = "\n".join([doc["content"] for doc in retrieved])
+                prompt_to_use = augment_query_with_rag(clean_input, rag)
+                print(f"{BLUE}[RAG] Augmented Query:{RESET} {prompt_to_use[:100]}...")
+            else:
+                print(f"{BLUE}[RAG] No relevant references found.{RESET}")
+
+        # 记忆模式
+        if memory:
+            history = memory.get_history('cli_user', limit=5)
+            if history:
+                print(f"{BLUE}[Memory] Conversation History:{RESET}")
+                for msg in history:
+                    print(f"{msg['role']}: {msg['content'][:50]}...")
+            memory.add_message('cli_user', 'user', clean_input)
+
+        # LLM 响应生成
+        print(f"{BLUE}[LLM] Generating response...{RESET}")
+        try:
+            messages = [
+                {"role": "system", "content": "You are a helpful assistant. Respond in JSON per schema.json."},
+                {"role": "user", "content": prompt_to_use}
+            ]
+            if memory:
+                history = memory.get_history('cli_user', limit=5)
+                messages = [{"role": "system", "content": "You are a helpful assistant. Respond in JSON per schema.json."}] + history + [{"role": "user", "content": prompt_to_use}]
+            response = llm.chat_stream(messages, temperature=args.temp, top_p=args.top_p)
+
+            # JSON 验证和修正
+            try:
+                json_response = json.loads(response)
+                valid, error = validate_json(json_response)
+                if not valid:
+                    print(f"{YELLOW}Validation error: {error}{RESET}")
+                    corrected = request_correction(llm, response, clean_input)
+                    print(f"{BLUE}Corrected JSON:{RESET}")
+                    print(json.dumps(json.loads(corrected), ensure_ascii=False, indent=2))
+                else:
+                    print(f"{BLUE}Valid JSON:{RESET}")
+                    print(json.dumps(json_response, ensure_ascii=False, indent=2))
+            except json.JSONDecodeError:
+                print(f"{YELLOW}Failed to parse response as JSON:{RESET}")
+                print(response)
+
+            # 添加到记忆
+            if memory:
+                memory.add_message('cli_user', 'assistant', response)
+        except Exception as e:
+            logger.error(f"LLM call failed: {e}")
+            print(f"{YELLOW}Error: LLM response generation failed.{RESET}")
+
+        print_separator()
+
+if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO)
+    run_cli()
