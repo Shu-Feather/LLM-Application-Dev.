@@ -143,95 +143,43 @@ project_root/
 
 ## 使用指南
 
-### 1. 基础模式
+### 基础功能层
+1. 参数对比:
+   ```bash
+      # 参数对比测试
+      python -c "from modules.compare import compare_params; compare_params('地壳中含量最高的五种元素是什么？')"
+   ```
 
-```bash
-python main.py
-```
+2. 基础交互界面(CLI):
+   ```bash
+     # 启动命令行界面
+      python main.py --model gpt-4 --temp 0.7
+   ```
+3. 真实场景测试数据:
+   ```bash
+      python scripts/batch_test.py
+   ```
+4. 多模态扩展:
+   ```bash
+     # 图像描述生成
+     python main.py --enable_multimodal --image_input <path/to/image.jpg>
+   ```
+5. 记忆机制:
+   ```bash
+      # 启用记忆功能
+      python main.py --enable_memory
+   ```
+6. 外部工具集成:
+   ```bash
+      # 测试计算器工具
+      python -c "from modules.tool_integration import CalculatorTool; print(CalculatorTool().eval_expr('2^3 + 5*2'))"
+   ```
 
-- 进入交互：输入请求，项目会：
-  1. 预处理（敏感词过滤、注入防护）。  
-  2. 构造 system prompt，指导 LLM 生成有意义 JSON（包含字段说明、时间示例等）。  
-  3. 调用 OpenAI 流式接口，逐块打印内容。  
-  4. 解析并校验 JSON；若不符合 Schema，自动修正并打印修正结果。  
-  5. 成功后打印格式化 JSON，可保存或后续处理。
-
-示例：
-```
-输入你的请求 (输入 'exit' 退出): hello
-开始请求 LLM，流式输出如下：
-{"summary":"你好！很高兴与您对话。","details":[{"title":"问候","content":"欢迎使用，请提供更多信息以继续。"}],"metadata":{"generated_at":"2025-06-23T16:10:00Z","confidence":0.88}}
-输出符合 Schema，可进一步处理或保存：
-{
-  "summary": "你好！很高兴与您对话。",
-  "details": [
-    {
-      "title": "问候",
-      "content": "欢迎使用，请提供更多信息以继续。"
-    }
-  ],
-  "metadata": {
-    "generated_at": "2025-06-23T16:10:00Z",
-    "confidence": 0.88
-  }
-}
-```
-
-### 2. 对比参数调优
-
-```bash
-python main.py --compare
-```
-
-- 输入同一 Prompt，分别以 `temperature=0.7` 和 `temperature=1.2` 发起流式请求，观察输出差异，帮助理解探索性 vs 稳定性。  
-
-### 3. CAMEL Agent 模式（可选）
-
-前提：已创建 `modules/agent_wrapper.py` 并安装 `camel-ai[all]`。
-
-```bash
-python main.py --use_agent
-```
-
-- 进入 Agent 交互：可处理多步对话、工具调用等高级场景。  
-- 若希望 Agent 输出符合 Schema，可在 Agent 返回后再执行校验/修正流程，或在 Agent prompt 中加入结构化指令。  
-- 参考 CAMEL-AI 文档了解 Agent 进阶用法，如工具注册、记忆管理、RAG 集成等。  
-
-### 4. 批量测试
-
-可编写小脚本遍历 `test_data/sample_inputs.json` 中的 prompts，自动发起请求并校验，统计首次合规率、修正次数等，用于调优提示或 Schema 设计。
-
-示例：
-```
-python - <<EOF
-import json
-from modules.preprocessing import preprocess
-from modules.llm_client import LLMClient
-from modules.validator import validate_json, request_correction
-
-llm = LLMClient(model_name="gpt-3.5-turbo")
-with open('test_data/sample_inputs.json', encoding='utf-8') as f:
-    items = json.load(f)
-for entry in items:
-    prompt = preprocess(entry['prompt'])
-    print("Prompt:", entry['prompt'])
-    raw_out = llm.chat_stream([
-        {"role":"system","content":"请基于用户输入生成有意义的 JSON，符合 Schema，仅输出 JSON。"},
-        {"role":"user","content":prompt}
-    ], temperature=0.7)
-    try:
-        parsed = json.loads(raw_out)
-        valid, err = validate_json(parsed)
-    except:
-        valid, err = False, "解析失败"
-    if not valid:
-        print("首次校验失败:", err)
-        corrected = request_correction(llm, raw_out, prompt)
-        print("修正后:", corrected)
-    else:
-        print("首次校验成功")
-EOF
-```
+7. 自主Agent实现:
+   ```bash
+      # 启动Agent模式
+      python main.py --use_advanced_agent
+   ```
 
 ---
 

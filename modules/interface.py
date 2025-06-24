@@ -27,7 +27,7 @@ def print_separator():
 def run_cli():
     # 解析命令行参数
     parser = argparse.ArgumentParser(description="Enhanced LLM Application CLI")
-    parser.add_argument('--model', type=str, default='gpt-4', help='LLM model name')
+    parser.add_argument('--model', type=str, default='gpt-3.5-turbo', help='LLM model name')
     parser.add_argument('--temp', type=float, default=0.7, help='Temperature parameter')
     parser.add_argument('--top_p', type=float, default=1.0, help='Top_p parameter')
     parser.add_argument('--enable_multimodal', action='store_true', help='Enable multimodal input (image/audio)')
@@ -43,6 +43,7 @@ def run_cli():
     # 初始化组件
     llm = LLMClient(model_name=args.model)
     multimodal = MultiModalProcessor() if args.enable_multimodal else None
+
     rag = None
     if args.enable_rag:
         retriever = RAGRetriever(index_prefix=args.rag_index) if args.rag_index else RAGRetriever()
@@ -72,12 +73,13 @@ def run_cli():
         # 多模态处理
         if multimodal:
             if args.image_input and os.path.exists(args.image_input):
-                desc = multimodal.process_image_input(args.image_input)
-                print(f"{BLUE}[Multimodal] Image Description:{RESET} {desc}")
-                clean_input = f"Image Description: {desc}\nUser Input: {clean_input}"
+                # 传递当前使用的模型
+                desc = multimodal.process_image_input(args.image_input, model_name=args.model)
+                print(f"{BLUE}[多模态] 图像描述:{RESET} {desc}")
+                clean_input = f"图像描述: {desc}\n用户输入: {clean_input}"
             if args.audio_input and os.path.exists(args.audio_input):
                 txt = multimodal.process_audio_input(args.audio_input)
-                print(f"{BLUE}[Multimodal] Audio Transcription:{RESET} {txt}")
+                print(f"{BLUE}[多模态] 音频转录:{RESET} {txt}")
                 clean_input = txt or clean_input
 
         # 代理模式
@@ -133,20 +135,26 @@ def run_cli():
                 json_response = json.loads(response)
                 valid, error = validate_json(json_response)
                 if not valid:
-                    print(f"{YELLOW}Validation error: {error}{RESET}")
+                    # print(f"{YELLOW}Validation error: {error}{RESET}")
+                    # corrected = request_correction(llm, response, clean_input)
+                    # print(f"{BLUE}Corrected JSON:{RESET}")
+                    # print(json.dumps(json.loads(corrected), ensure_ascii=False, indent=2))
+                    logger.warning(f"JSON validation failed: {error}")
+                    # 后台静默修正
                     corrected = request_correction(llm, response, clean_input)
-                    print(f"{BLUE}Corrected JSON:{RESET}")
-                    print(json.dumps(json.loads(corrected), ensure_ascii=False, indent=2))
-                else:
-                    print(f"{BLUE}Valid JSON:{RESET}")
-                    print(json.dumps(json_response, ensure_ascii=False, indent=2))
+                    logger.info(f"Corrected response: {corrected[:100]}...")
+                # else:
+                #     print(f"{BLUE}Valid JSON:{RESET}")
+                #     print(json.dumps(json_response, ensure_ascii=False, indent=2))
             except json.JSONDecodeError:
-                print(f"{YELLOW}Failed to parse response as JSON:{RESET}")
-                print(response)
+                # print(f"{YELLOW}Failed to parse response as JSON:{RESET}")
+                # print(response)
+                logger.error("Response is not valid JSON")
 
             # 添加到记忆
             if memory:
                 memory.add_message('cli_user', 'assistant', response)
+
         except Exception as e:
             logger.error(f"LLM call failed: {e}")
             print(f"{YELLOW}Error: LLM response generation failed.{RESET}")

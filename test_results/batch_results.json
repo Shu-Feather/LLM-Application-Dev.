@@ -1,0 +1,248 @@
+[
+  {
+    "prompt": "请根据以下信息生成产品简介：产品名称：智能教育助手，功能：自动批改作业，个性化推荐学习资料。输出应包含 summary, details, metadata 等字段。",
+    "status": "success",
+    "response": {
+      "summary": "智能教育助手产品简介",
+      "details": [
+        {
+          "title": "产品名称",
+          "content": "智能教育助手"
+        },
+        {
+          "title": "主要功能",
+          "content": "自动批改作业，个性化推荐学习资料"
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-03-30T12:00:00Z",
+        "confidence": 0.95
+      }
+    }
+  },
+  {
+    "prompt": "给我一份会议纪要模板，包含时间、参会人员、议程、讨论要点、行动项等字段，要求输出符合 Schema 的 JSON。",
+    "status": "success",
+    "response": {
+      "summary": "会议纪要模板",
+      "details": [
+        {
+          "title": "时间",
+          "content": ""
+        },
+        {
+          "title": "参会人员",
+          "content": ""
+        },
+        {
+          "title": "议程",
+          "content": ""
+        },
+        {
+          "title": "讨论要点",
+          "content": ""
+        },
+        {
+          "title": "行动项",
+          "content": ""
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-02-22T12:00:00Z",
+        "confidence": 1.0
+      }
+    }
+  },
+  {
+    "prompt": "为电商网站生成用户购物行为分析报告的摘要，包括购买频次、热门品类、用户画像建议等，输出结构化 JSON，包含 summary, details, metadata, recommendations 等字段。",
+    "status": "success",
+    "response": {
+      "summary": "用户购物行为分析报告",
+      "details": [
+        {
+          "title": "购买频次",
+          "content": "用户平均每月购买3次，主要集中在周末和节假日。"
+        },
+        {
+          "title": "热门品类",
+          "content": "用户购买最多的品类是家居用品，其次是电子产品和食品。"
+        },
+        {
+          "title": "用户画像建议",
+          "content": "建议根据用户的购买记录和行为数据，进一步细分用户群体，提供更个性化的产品推荐和服务。"
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-02-07T10:00:00Z",
+        "confidence": 0.9
+      },
+      "recommendations": [
+        {
+          "title": "增加周末促销活动",
+          "content": "考虑到用户的购买频次主要集中在周末，建议增加周末的促销活动，以吸引更多用户购买。"
+        },
+        {
+          "title": "优化产品分类",
+          "content": "根据用户购买的热门品类，优化网站的产品分类，让用户更容易找到自己想要的产品。"
+        },
+        {
+          "title": "提升个性化服务",
+          "content": "根据用户画像的建议，提升个性化服务，如个性化推荐，以提高用户满意度和购买率。"
+        }
+      ]
+    }
+  },
+  {
+    "prompt": "请生成一份技术博客文章大纲，主题：基于 Transformer 的自然语言处理，包含章节标题和简要说明，输出符合 Schema 的 JSON，可在 details 中列出章节，metadata.generated_at 用当前时间。",
+    "status": "success",
+    "response": {
+      "summary": "技术博客文章大纲 - 基于 Transformer 的自然语言处理",
+      "details": [
+        {
+          "title": "引言",
+          "content": "对自然语言处理的介绍及其在实际生活中的应用"
+        },
+        {
+          "title": "Transformer 架构",
+          "content": "详细介绍 Transformer 架构的基本构成和工作原理"
+        },
+        {
+          "title": "自注意力机制",
+          "content": "解释自注意力机制的概念，以及如何在 Transformer 中实现"
+        },
+        {
+          "title": "位置编码",
+          "content": "阐述 Transformer 中位置编码的重要性和具体实现方式"
+        },
+        {
+          "title": "Transformer 在 NLP 中的应用",
+          "content": "列举几种典型的 Transformer 在自然语言处理中的应用案例，如机器翻译、文本摘要等"
+        },
+        {
+          "title": "总结",
+          "content": "总结全文，回顾 Transformer 在自然语言处理中的重要性"
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-03-01T00:00:00Z",
+        "confidence": 0.9
+      }
+    }
+  },
+  {
+    "prompt": "请根据以下对话记录生成客户支持回应建议，包括情感分析和下一步操作建议，输出符合 Schema 的 JSON：\n对话记录: '用户: 我的订单迟迟未到达，怎么办？'",
+    "status": "success",
+    "response": {
+      "summary": "用户投诉订单延迟",
+      "details": [
+        {
+          "title": "用户问题",
+          "content": "我的订单迟迟未到达，怎么办？"
+        },
+        {
+          "title": "情感分析",
+          "content": "用户可能感到焦虑或不满"
+        },
+        {
+          "title": "下一步操作建议",
+          "content": "客服应核实订单状态，向用户解释延迟原因，并提供可能的解决方案"
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-03-22T14:17:00Z",
+        "confidence": 0.85
+      }
+    }
+  },
+  {
+    "prompt": "请分析给定的财务数据摘要并提供三点投资建议，数据摘要: '本季度营收增长5%，成本上升3%，净利润率为12%'，输出结构化 JSON，包含 summary, details 列举分析点，并在 recommendations 字段给出建议列表。",
+    "status": "success",
+    "response": {
+      "summary": "财务数据摘要分析及投资建议",
+      "details": [
+        {
+          "title": "营收",
+          "content": "本季度营收增长5%"
+        },
+        {
+          "title": "成本",
+          "content": "成本上升3%"
+        },
+        {
+          "title": "净利润率",
+          "content": "净利润率为12%"
+        }
+      ],
+      "recommendations": [
+        "由于营收增长超过成本上升，公司整体盈利能力有所提升，可以考虑适度增持。",
+        "净利润率为12%，表明公司盈利能力较强，且有稳定的盈利来源，适合长期投资。",
+        "关注该公司后续的成本控制能力，如能有效控制成本，将有利于进一步提高盈利水平。"
+      ],
+      "metadata": {
+        "generated_at": "2022-03-30T14:18:00Z",
+        "confidence": 0.85
+      }
+    }
+  },
+  {
+    "prompt": "为医院诊断生成报告模板，包括病人基本信息、症状描述、诊断结果、治疗建议等字段，输出符合 Schema 的 JSON，可在 details 中分项列出各字段。",
+    "status": "success",
+    "response": {
+      "summary": "医院诊断报告模板生成",
+      "details": [
+        {
+          "title": "病人基本信息",
+          "content": "包含姓名、年龄、性别、住址等"
+        },
+        {
+          "title": "症状描述",
+          "content": "详细描述病人的主诉和体征，包括病情发生的时间、地点、症状的严重程度等"
+        },
+        {
+          "title": "诊断结果",
+          "content": "根据病人的症状和体征，医生给出的初步诊断或确诊结果"
+        },
+        {
+          "title": "治疗建议",
+          "content": "针对诊断结果，医生给出的治疗建议，包括药物治疗、手术治疗等"
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-07-18T10:45:00Z",
+        "confidence": 0.95
+      },
+      "recommendations": [
+        {
+          "title": "后续检查",
+          "content": "如果病情需要，可以进行进一步的实验室检查或影像学检查"
+        },
+        {
+          "title": "健康生活建议",
+          "content": "给出改善生活习惯、饮食习惯的建议，帮助病人恢复健康"
+        }
+      ],
+      "source": "医院诊断报告系统"
+    }
+  },
+  {
+    "prompt": "请翻译以下文本为英文并总结重点，文本: '人工智能正改变世界，应用于医疗、金融、制造等领域。'，输出 JSON 格式，包含原文(original)、译文(translation)和摘要(summary)。",
+    "status": "success",
+    "response": {
+      "summary": "The text talks about how artificial intelligence is changing the world and its applications in various fields such as medicine, finance, and manufacturing.",
+      "details": [
+        {
+          "title": "original",
+          "content": "人工智能正改变世界，应用于医疗、金融、制造等领域。"
+        },
+        {
+          "title": "translation",
+          "content": "Artificial intelligence is changing the world, being applied in fields such as medicine, finance, and manufacturing."
+        }
+      ],
+      "metadata": {
+        "generated_at": "2022-03-17T00:00:00Z",
+        "confidence": 0.95
+      }
+    }
+  }
+]

@@ -9,10 +9,26 @@ sys.path.insert(0, project_root)
 
 import json
 import re
+import logging
 from modules.preprocessing import preprocess
 from modules.llm_client import LLMClient
 from modules.validator import validate_json, request_correction
 from dotenv import load_dotenv
+
+# 配置日志
+log_dir = "test_results"
+log_file_path = os.path.join(log_dir, "batch_test.log")
+os.makedirs(log_dir, exist_ok=True) 
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(log_file_path),  
+        logging.StreamHandler(sys.stdout)
+    ]
+)
+logger = logging.getLogger('batch_test')
 
 load_dotenv()
 
@@ -36,10 +52,13 @@ def main():
     inputs = load_inputs(input_path)
 
     llm = LLMClient()
+    results = []
+    
     for idx, item in enumerate(inputs, 1):
         prompt = item.get("prompt", "")
         print(f"\n=== Testing Prompt #{idx} ===")
         print(f"Prompt: {prompt}")
+        logger.info(f"Testing Prompt #{idx}: {prompt}")
 
         clean_prompt = preprocess(prompt)
         system_prompt = (
@@ -55,54 +74,81 @@ def main():
             {"role": "user", "content": clean_prompt}
         ]
 
-        # 发起流式请求并收集
+        # 发起流式请求
+        print("Response:")
         try:
             raw_output = llm.chat_stream(messages)
         except Exception as e:
-            print(f"LLM 调用异常: {e}")
+            print(f"LLM call error: {e}")
+            logger.error(f"LLM call error for prompt #{idx}: {e}")
+            results.append({
+                "prompt": prompt,
+                "status": "error",
+                "error": str(e)
+            })
             continue
 
         # 去除 Markdown 代码块包裹
         raw_output_stripped = strip_code_block(raw_output).strip()
-        print("Raw Output:")
-        print(raw_output_stripped)
-
+        
         # 解析 JSON
         try:
             parsed = json.loads(raw_output_stripped)
+            results.append({
+                "prompt": prompt,
+                "status": "success",
+                "response": parsed
+            })
         except json.JSONDecodeError:
-            print("Output is not valid JSON. Requesting correction...")
+            logger.warning(f"Output is not valid JSON for prompt #{idx}. Requesting correction...")
             try:
                 corrected_str = request_correction(llm, raw_output_stripped, clean_prompt)
                 corrected_str = strip_code_block(corrected_str).strip()
                 parsed = json.loads(corrected_str)
-                raw_output_stripped = corrected_str
-                print("Corrected Output:")
-                print(raw_output_stripped)
+                results.append({
+                    "prompt": prompt,
+                    "status": "corrected",
+                    "original_response": raw_output_stripped,
+                    "corrected_response": parsed
+                })
+                logger.info(f"Corrected response for prompt #{idx}")
             except Exception as e:
-                print(f"修正失败或非 JSON: {e}")
+                logger.error(f"Correction failed: {e}")
+                results.append({
+                    "prompt": prompt,
+                    "status": "error",
+                    "error": f"Correction failed: {str(e)}"
+                })
                 continue
 
-        # 校验结构
+        # 后台静默校验结构
         valid, err = validate_json(parsed)
-        if valid:
-            print("Output valid against schema.")
-        else:
-            print(f"Output invalid: {err}，请求修正...")
+        if not valid:
+            logger.warning(f"JSON validation failed for prompt #{idx}: {err}")
+            # 尝试后台修正
             try:
                 corrected = request_correction(llm, raw_output_stripped, clean_prompt)
                 corrected = strip_code_block(corrected).strip()
-                print("Corrected Output:")
-                print(corrected)
-                # 可再次验证
                 try:
                     parsed2 = json.loads(corrected)
                     valid2, err2 = validate_json(parsed2)
-                    print("第二次校验:", "Correct..!" if valid2 else f"Wrong..! {err2}")
+                    if valid2:
+                        logger.info(f"Background correction successful for prompt #{idx}")
+                    else:
+                        logger.error(f"Background correction still invalid: {err2}")
                 except Exception:
-                    print("第二次校验: 解析失败")
+                    logger.error("Background correction: parse failed")
             except Exception as e:
-                print(f"修正过程异常: {e}")
+                logger.error(f"Background correction failed: {e}")
+
+    # 保存测试结果
+    result_path = os.path.join(os.path.dirname(__file__), '..', 'test_results', 'batch_results.json')
+    os.makedirs(os.path.dirname(result_path), exist_ok=True)
+    with open(result_path, 'w', encoding='utf-8') as f:
+        json.dump(results, f, ensure_ascii=False, indent=2)
+    
+    print("\n=== Batch Test Completed ===")
+    print(f"Results saved to: {result_path}")
 
 if __name__ == '__main__':
     main()
